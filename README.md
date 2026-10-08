@@ -9,7 +9,7 @@ Companion to *Atomic collapse in gapped two-dimensional Dirac materials: Screeni
 gates, and resonance widths*, whose single-particle code `collapse2d`
 ([ehocine/dirac-collapse](https://github.com/ehocine/dirac-collapse), release 1.0.0,
 [doi:10.5281/zenodo.23123320](https://doi.org/10.5281/zenodo.23123320)) this package builds on.
-License: MIT (see `LICENSE`). Citation: `CITATION.cff`.
+Repository: https://github.com/ehocine/impurity-charge-states · Archive (release 1.0.0): [doi:10.5281/zenodo.23249679](https://doi.org/10.5281/zenodo.23249679) · License: MIT (see `LICENSE`) · Citation: `CITATION.cff`
 
 ## Quick start
 
