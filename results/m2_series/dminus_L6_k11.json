@@ -1,0 +1,1 @@
+{"system": "dminus", "dtype": "float32", "alpha": 0.05, "L": 6, "kfac": 11.0, "Rfac": 20.0, "n_states": 886, "size": 30233, "E1_binding_Ry": 4.010050314705981, "Dminus_binding_Ry": 0.47284652691601525, "iterations": 42, "residual": 1.278724649529619e-10, "time": 229.65072798728943}

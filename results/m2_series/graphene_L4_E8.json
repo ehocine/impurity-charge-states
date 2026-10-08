@@ -1,0 +1,1 @@
+{"system": "graphene", "dtype": "float32", "L": 4, "Emax": 8.0, "n_states": 691, "n_q": 1216, "E1": -0.7812663340980486, "singlet": {"size": 26568, "E2": -0.4115017001894952, "iterations": 300, "residual": 7.798983356757107e-10}, "intervalley": {"size": 53059, "E2": -0.4155601239731267, "iterations": 300, "residual": 1.0296899585316928e-09}, "time": 689.8402419090271}

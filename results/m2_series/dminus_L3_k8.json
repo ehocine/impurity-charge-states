@@ -1,0 +1,1 @@
+{"alpha": 0.05, "L": 3, "kfac": 8.0, "Rfac": 20.0, "n_states": 349, "size": 8727, "E1_binding_Ry": 4.010050314704293, "Dminus_binding_Ry": 0.4654914796651254, "time": 215.47835612297058, "system": "dminus", "script": "scripts/m2_v3_dminus.py alpha L kfac Rfac", "solver": "dense", "q_panels": "default of 2026-10-08 morning (2/R)"}

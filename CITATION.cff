@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite the accompanying paper."
+title: "chargestates: charge states of a near-critical Coulomb impurity in gapped graphene"
+authors:
+  - family-names: Hocine
+    given-names: Elhadj
+    affiliation: "Independent Researcher, Algiers, Algeria"
+version: 1.0.0
+date-released: 2026-10-08
+license: MIT
+repository-code: "https://github.com/ehocine/impurity-charge-states"
+preferred-citation:
+  type: article
+  title: "Charge states of a near-critical Coulomb impurity in gapped graphene: Correlation and gate control"
+  authors:
+    - family-names: Hocine
+      given-names: Elhadj
+  status: preprint
+references:
+  - type: software
+    title: "collapse2d: atomic collapse of charged impurities in gapped 2D Dirac materials"
+    authors:
+      - family-names: Hocine
+        given-names: Elhadj
+    version: 1.0.0
+    doi: 10.5281/zenodo.23123320

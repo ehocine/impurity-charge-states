@@ -1,0 +1,18 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+results/*.npz
+*.err
+# collapse2d checkout (see README)
+external/
+# superseded runs (kept locally; replaced after method fixes)
+results/m3/superseded/
+# working notes and literature (not part of the code repository)
+NOTES.md
+PLAN.md
+LITERATURE.md
+refs/
+# manuscript (kept outside the repository); generated tables are tracked
+paper/*
+!paper/tables/
