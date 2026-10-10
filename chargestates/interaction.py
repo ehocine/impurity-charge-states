@@ -126,3 +126,33 @@ class Interaction:
         """(A^l_ac sqrt w) Phi_l: array (len(ia), len(ic), rank_l); requires compress()."""
         A = self.form_factors(ia, ic, l)
         return (A * np.sqrt(self.wq)) @ self._phi[l]
+
+
+def compress_shared(pairs, tol=1e-9):
+    """Compress several Interaction objects on the same q nodes with one set of q-profiles.
+
+    pairs: list of (Interaction, channels) with channels a dict j -> state indices.  Needed when
+    the electrons of a CI live in different bases (valleys K and K' in a field, field.py): the
+    factorisation <ab|W|cd> = sum_k C_ac,k C_bd,k requires the same Phi_l for both form factors.
+    Sets _phi on every Interaction; returns the ranks.
+    """
+    q = pairs[0][0].q
+    grams = {}
+    for inter, channels in pairs:
+        if inter.q.shape != q.shape or np.any(inter.q != q):
+            raise ValueError("compress_shared needs the same q nodes for all interactions")
+        sw = np.sqrt(inter.wq)
+        js = sorted(channels)
+        for ja in js:
+            for jc in js:
+                l = int(round(abs(ja - jc)))
+                A = inter.form_factors(channels[ja], channels[jc], l).reshape(-1, len(q)) * sw
+                grams[l] = grams.get(l, 0.0) + A.T @ A
+    phi = {}
+    for l, G in grams.items():
+        lam, U = np.linalg.eigh(G)
+        phi[l] = U[:, lam > tol ** 2 * lam[-1]]
+    for inter, _ in pairs:
+        inter._phi = phi
+        inter.ranks = {l: P.shape[1] for l, P in phi.items()}
+    return {l: P.shape[1] for l, P in phi.items()}

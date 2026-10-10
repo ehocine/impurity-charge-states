@@ -5,9 +5,9 @@ authors:
   - family-names: Hocine
     given-names: Elhadj
     affiliation: "Independent Researcher, Algiers, Algeria"
-version: 1.0.0
-doi: 10.5281/zenodo.23249679
-date-released: 2026-10-09
+version: 1.0.1
+doi: 10.5281/zenodo.23249678
+date-released: 2026-10-10
 license: MIT
 repository-code: "https://github.com/ehocine/impurity-charge-states"
 preferred-citation:

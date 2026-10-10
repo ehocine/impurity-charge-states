@@ -62,11 +62,12 @@ def moment_two(ci, vec):
 def moment_three(ci3, vec):
     """<mu_z>/mu_B of a ThreeElectronCI eigenvector (electrons 1, 2 in K, electron 3 in K')."""
     Mj = {j: moment_matrix(ci3.basis, idx) for j, idx in ci3.channels.items()}
+    M3 = {j: moment_matrix(ci3.basis3, idx) for j, idx in ci3.channels3.items()}
     tot = 0.0
     for (ja, jb, jc), P in ci3.full_tensor(vec).items():
         tot += np.sum(P * np.einsum("aA,Abc->abc", Mj[ja], P))
         tot += np.sum(P * np.einsum("bB,aBc->abc", Mj[jb], P))
-        tot -= np.sum(P * np.einsum("cC,abC->abc", Mj[jc], P))
+        tot -= np.sum(P * np.einsum("cC,abC->abc", M3[jc], P))
     return float(tot)
 
 

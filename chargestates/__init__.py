@@ -6,4 +6,4 @@ built on the single-particle machinery of collapse2d (paper 1).
 from .deps import collapse2d  # noqa: F401
 from .furry import Grid, FurryBasis  # noqa: F401
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"

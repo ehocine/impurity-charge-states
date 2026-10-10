@@ -7,6 +7,10 @@ antisymmetric ('triplet' pair) under 1 <-> 2.  Electron 3 is in K', labelled by 
 orbital j~ whose complex conjugate it is (actual angular momentum -j~); with intervalley
 exchange neglected it is distinguishable.  Conserved: M = j_1 + j_2 - j~_3.
 
+In a field the two valleys have different orbitals (field.py): electron 3 may then be given its
+own basis and Interaction (basis3, inter3), compressed together with the pair's
+(interaction.compress_shared).  Without basis3 all three electrons use the same basis.
+
 Selection rules (see interaction.py): W_12 (same valley) conserves j_1 + j_2; W_13 and W_23
 (opposite valleys) conserve j_1 - j~_3 and j_2 - j~_3 respectively.  All matrix elements are
 sum_k C_ac,k C_bd,k with the q-compressed form factors of Interaction.compress, so every
@@ -18,12 +22,21 @@ import numpy as np
 
 
 class ThreeElectronCI:
-    def __init__(self, basis, inter, pair, M, js=None, n_max=None, one_body=None, terms=(1.0, 1.0, 1.0)):
+    def __init__(self, basis, inter, pair, M, js=None, n_max=None, one_body=None, terms=(1.0, 1.0, 1.0),
+                 basis3=None, inter3=None):
         """pair: 'singlet' or 'triplet' (symmetry of the K pair); terms: scale factors of
-        (W_12, W_13, W_23), for tests.  inter must be compressed (Interaction.compress)."""
+        (W_12, W_13, W_23), for tests.  inter must be compressed (Interaction.compress).
+        basis3, inter3: basis and Interaction of electron 3 (default: those of the pair); inter3
+        must share the q-profiles of inter (interaction.compress_shared)."""
         if getattr(inter, "_phi", None) is None:
             raise ValueError("call inter.compress(channels) first")
+        if basis3 is not None and (inter3 is None or one_body is not None):
+            raise ValueError("basis3 needs inter3 and the diagonal one-body term")
+        if basis3 is not None and inter3._phi is not inter._phi:
+            raise ValueError("compress inter and inter3 together (interaction.compress_shared)")
         self.basis, self.inter, self.M = basis, inter, float(M)
+        self.basis3 = basis if basis3 is None else basis3
+        self.inter3 = inter if inter3 is None else inter3
         self.sign = {"singlet": 1.0, "triplet": -1.0}[pair]
         self.terms = terms
         js = np.array(sorted(set(np.round(basis.j, 1)) if js is None else js), float)
@@ -32,13 +45,21 @@ class ThreeElectronCI:
             self.t = {j: np.diag(basis.E[idx]) for j, idx in self.channels.items()}
         else:
             self.t = {j: np.asarray(one_body(j, idx), float) for j, idx in self.channels.items()}
+        if basis3 is None:
+            self.channels3, self.t3 = self.channels, self.t
+        else:
+            self.channels3 = {j: basis3.select(j)[:n_max] for j in js}
+            self.t3 = {j: np.diag(basis3.E[idx]) for j, idx in self.channels3.items()}
         self.n = {j: len(idx) for j, idx in self.channels.items()}
-        self.triples = [(ja, jb, ja + jb - self.M) for ja in js for jb in js if (ja + jb - self.M) in self.channels]
-        self.shapes = [(self.n[a], self.n[b], self.n[c]) for a, b, c in self.triples]
+        self.n3 = {j: len(idx) for j, idx in self.channels3.items()}
+        self.triples = [(ja, jb, ja + jb - self.M) for ja in js for jb in js
+                        if (ja + jb - self.M) in self.channels3
+                        and min(self.n[ja], self.n[jb], self.n3[ja + jb - self.M]) > 0]
+        self.shapes = [(self.n[a], self.n[b], self.n3[c]) for a, b, c in self.triples]
         self.offs = np.cumsum([0] + [int(np.prod(s)) for s in self.shapes])
         self.size = int(self.offs[-1])
         self.index = {tr: k for k, tr in enumerate(self.triples)}
-        self._C = {}
+        self._C, self._C3 = {}, {}
 
     # -- helpers -------------------------------------------------------------------------
     def _Cf(self, ja, jc):
@@ -49,6 +70,17 @@ class ThreeElectronCI:
             C = self.inter.form_factors_compressed(self.channels[ja], self.channels[jc], l)
             self._C[key] = np.ascontiguousarray(C.transpose(2, 0, 1))
         return self._C[key]
+
+    def _Cf3(self, jc, jc2):
+        """Compressed form factors of electron 3, channels (jc, jc2), as (k, c, C), cached."""
+        if self.basis3 is self.basis:
+            return self._Cf(jc, jc2)
+        key = (jc, jc2)
+        if key not in self._C3:
+            l = int(round(abs(jc - jc2)))
+            C = self.inter3.form_factors_compressed(self.channels3[jc], self.channels3[jc2], l)
+            self._C3[key] = np.ascontiguousarray(C.transpose(2, 0, 1))
+        return self._C3[key]
 
     def _blocks(self, v):
         return [v[self.offs[k]:self.offs[k + 1]].reshape(self.shapes[k]) for k in range(len(self.triples))]
@@ -72,7 +104,7 @@ class ThreeElectronCI:
             # one-body
             R += np.einsum("aA,Abc->abc", self.t[ja], P[k])
             R += np.einsum("bB,aBc->abc", self.t[jb], P[k])
-            R += np.einsum("cC,abC->abc", self.t[jc], P[k])
+            R += np.einsum("cC,abC->abc", self.t3[jc], P[k])
             for kk, (ja2, jb2, jc2) in enumerate(self.triples):
                 X = P[kk]
                 # W_12: same jc, j_a + j_b conserved (automatic: both triples have the same M)
@@ -82,12 +114,12 @@ class ThreeElectronCI:
                     R += s12 * np.einsum("kaBc,kbB->abc", T, C2, optimize=True)
                 # W_13: same jb, j_a - j~_c conserved
                 if s13 and jb2 == jb and (ja - ja2) == (jc - jc2):
-                    C1, C3 = self._Cf(ja, ja2), self._Cf(jc, jc2)       # (k,a,A), (k,c,Cc)
+                    C1, C3 = self._Cf(ja, ja2), self._Cf3(jc, jc2)      # (k,a,A), (k,c,Cc)
                     T = np.tensordot(C1, X, axes=([2], [0]))           # (k, a, b, Cc)
                     R += s13 * np.einsum("kabC,kcC->abc", T, C3, optimize=True)
                 # W_23: same ja, j_b - j~_c conserved
                 if s23 and ja2 == ja and (jb - jb2) == (jc - jc2):
-                    C2, C3 = self._Cf(jb, jb2), self._Cf(jc, jc2)
+                    C2, C3 = self._Cf(jb, jb2), self._Cf3(jc, jc2)
                     T = np.tensordot(C2, X, axes=([2], [1]))           # (k, b, a, Cc)
                     R += s23 * np.einsum("kbaC,kcC->abc", T, C3, optimize=True)
         return np.concatenate([o.ravel() for o in out])
@@ -96,10 +128,10 @@ class ThreeElectronCI:
         d = []
         s12, s13, s23 = self.terms
         for (ja, jb, jc) in self.triples:
-            ta, tb, tc = np.diag(self.t[ja]), np.diag(self.t[jb]), np.diag(self.t[jc])
+            ta, tb, tc = np.diag(self.t[ja]), np.diag(self.t[jb]), np.diag(self.t3[jc])
             Da = np.einsum("kaa->ka", self._Cf(ja, ja))
             Db = np.einsum("kbb->kb", self._Cf(jb, jb))
-            Dc = np.einsum("kcc->kc", self._Cf(jc, jc))
+            Dc = np.einsum("kcc->kc", self._Cf3(jc, jc))
             D = ta[:, None, None] + tb[None, :, None] + tc[None, None, :]
             D = D + s12 * np.einsum("ka,kb->ab", Da, Db)[:, :, None]
             D = D + s13 * np.einsum("ka,kc->ac", Da, Dc)[:, None, :]
