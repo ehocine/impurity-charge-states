@@ -1,0 +1,5 @@
+x=0.95 n=16: mu3=0.7350 mu4=0.9152 Delta  ground4=[1, 1, -1, -1] sym=1,1 M=0.0  t=992s
+x=0.95 n=16: mu3=0.7842 mu4=0.8809 Delta  ground4=[1, 1, -1, -1] sym=1,1 M=0.0  t=804s
+x=0.95 n=20: mu3=0.7306 mu4=0.9166 Delta  ground4=[1, 1, -1, -1] sym=1,1 M=0.0  t=2282s
+x=0.95 n=20: mu3=0.7636 mu4=0.8728 Delta  ground4=[1, 1, -1, -1] sym=1,1 M=0.0  t=2368s
+all done

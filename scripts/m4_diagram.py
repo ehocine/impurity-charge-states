@@ -11,6 +11,11 @@ state has N electrons when mu_N < E_F < mu_{N+1}, with the addition energies
          correction MU3_SHIFT to n_max -> inf, calibrated at D = 10 nm, Z = 0.95 Z_c
          (results/m3/three_D10_nmax_convergence.jsonl: n_max = 12..28 -> 0.7433 .. 0.7255,
          1/n extrapolation 0.712; shift -0.018 +- 0.01 Delta).
+  mu_4 = E_4 - E_3 (results/m8, ground sectors: closed shell / K pair + K' electron) at
+         n_max = 12 and 16, extrapolated as a + b/n_max (checked against n_max = 20 at 0.95 Z_c:
+         within 0.002 Delta).  With a gate the fourth electron completes the fourfold level near
+         the conduction-band edge; without a gate it is unbound (mu_4 > Delta, results/m8/
+         four_30meV_nogate_n6.jsonl).
 Cases: 2Delta = 30 and 15 meV without gate, 30 meV with D = 10 and 3 nm.
 Writes results/m4/diagram.json and figures/fig_diagram.{pdf,png}.
 """
@@ -36,10 +41,28 @@ def load(name):
     return sorted(rows, key=lambda d: d["Z"])
 
 
+def mu4_extrapolated(case):
+    """{round(Z/Z_c, 3): mu_4} from the n_max = 12, 16 runs of M8 (a + b/n extrapolation)."""
+    M8 = os.path.join(ROOT, "results", "m8")
+    rows = []
+    for name in (f"conv_{case}_all.jsonl", f"conv_{case}_x0.95.jsonl"):
+        path = os.path.join(M8, name)
+        if os.path.exists(path):
+            rows += [json.loads(l) for l in open(path) if l.strip()]
+    out = {}
+    for x in sorted({round(r["x"], 3) for r in rows}):
+        mu = {r["n_max"]: r["mu4"] for r in rows if round(r["x"], 3) == x}
+        if 12 in mu and 16 in mu:
+            b = (mu[12] - mu[16]) / (1 / 12 - 1 / 16)
+            out[x] = mu[16] - b / 16
+    return out
+
+
 def addition_energies(case, gap=30):
     two = [d for d in load(f"scan_{gap}meV_{case}.jsonl") if d.get("E1") is not None]
     three = {round(d["Z"], 6): d for d in load(f"three_{gap}meV_{case}_n20.jsonl")
              if d.get("E1") is not None and "E3" in d}
+    mu4 = mu4_extrapolated(case) if gap == 30 and case != "nogate" else {}
     rows = []
     for d in two:
         E2 = min(d["singlet"], d["intervalley"])
@@ -49,9 +72,51 @@ def addition_energies(case, gap=30):
         if t is not None:
             E2t = min(t["E2_singlet"], t["E2_intervalley"])
             rec["mu3"] = t["E3"] - E2t + MU3_SHIFT
+        x = round(d["Z"] / d["Zc"], 3)
+        if x in mu4:
+            rec["mu4"] = mu4[x]
         rows.append(rec)
     return rows
 
+
+
+def draw(ax, x, mus, ylim, x_min=None, small=False, n_label=5):
+    """Charge-state regions between the addition energies mus = (mu_1 ... mu_4) on axes ax."""
+    from scipy.interpolate import PchipInterpolator
+    cols = ["#f2f2f2", "#cfe3f3", "#9ecae1", "#6baed6", "#3182bd"]
+    lo_x = x.min() if x_min is None else x_min
+    xs = np.linspace(x.min(), x.max(), 400)
+    lines = []
+    for mu in mus:
+        ok = np.isfinite(mu)
+        if ok.sum() >= 2:
+            f = PchipInterpolator(x[ok], mu[ok], extrapolate=False)
+            y = f(xs)
+            y[(xs < x[ok].min()) | (xs > x[ok].max())] = np.nan
+        else:
+            y = np.full_like(xs, np.nan)
+        lines.append(y)
+    # region N lies between mu_N (below) and mu_{N+1} (above), clipped to the gap
+    bounds = [np.full_like(xs, -1.0)] + [np.where(np.isfinite(y), np.clip(y, -1, 1), 1.0) for y in lines] \
+        + [np.full_like(xs, 1.0)]
+    span = ylim[1] - ylim[0]
+    vis = xs >= lo_x
+    for n in range(5):
+        lo, hi = bounds[n], bounds[n + 1]
+        ax.fill_between(xs, lo, np.maximum(hi, lo), color=cols[n], lw=0)
+        mid = 0.5 * (lo + hi)
+        sel = vis & ((hi - lo) > 0.09 * span) & (mid > ylim[0]) & (mid < ylim[1])
+        if n < n_label and np.any(sel):
+            i = np.flatnonzero(sel)[int(0.6 * np.sum(sel))] if n < 2 else np.flatnonzero(sel)[-max(1, np.sum(sel) // 4)]
+            ax.text(xs[i], mid[i], f"$N={n}$", ha="center", va="center", fontsize=6 if small else 8,
+                    color="w" if n == 4 else "k")
+    for y, mu in zip(lines, mus):
+        ax.plot(xs, y, "k-", lw=0.7 if small else 0.9)
+        ok = np.isfinite(mu)
+        ax.plot(x[ok], mu[ok], "k.", ms=2 if small else 3)
+    ax.axvline(1.0, color="0.4", lw=0.6, ls=":")
+    ax.set_ylim(*ylim)
+    ax.set_xlim(lo_x, max(x.max(), 1.0) + 0.01)
 
 def main():
     os.makedirs(OUT, exist_ok=True)
@@ -67,7 +132,6 @@ def main():
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     plt.rcParams.update({"font.family": "serif", "font.size": 9, "mathtext.fontset": "cm"})
-    cols = ["#f2f2f2", "#cfe3f3", "#9ecae1", "#6baed6"]
     fig, axs = plt.subplots(2, 2, figsize=(7.0, 5.0), sharey=True)
     axs = axs.ravel()
     for ax, (key, _, _, title) in zip(axs, CASES):
@@ -76,37 +140,17 @@ def main():
             continue
         Z = np.array([r["Z"] for r in rows])
         Zc = rows[0]["Zc"]
-        mus = [np.array([r.get(k, np.nan) for r in rows]) for k in ("mu1", "mu2", "mu3")]
-        x = Z / Zc
-        from scipy.interpolate import PchipInterpolator
-        xs = np.linspace(x.min(), x.max(), 400)
-        lines = []
-        for mu in mus:
-            ok = np.isfinite(mu)
-            if ok.sum() >= 2:
-                f = PchipInterpolator(x[ok], mu[ok], extrapolate=False)
-                y = f(xs)
-                y[(xs < x[ok].min()) | (xs > x[ok].max())] = np.nan
-            else:
-                y = np.full_like(xs, np.nan)
-            lines.append(y)
-        # region N lies between mu_N (below) and mu_{N+1} (above), clipped to the gap
-        bounds = [np.full_like(xs, -1.0)] + [np.where(np.isfinite(y), np.clip(y, -1, 1), 1.0) for y in lines] \
-            + [np.full_like(xs, 1.0)]
-        for n in range(4):
-            lo, hi = bounds[n], bounds[n + 1]
-            ax.fill_between(xs, lo, np.maximum(hi, lo), color=cols[n], lw=0)
-            sel = (hi - lo) > 0.18
-            if np.any(sel):
-                i = np.flatnonzero(sel)[int(0.6 * np.sum(sel))] if n < 2 else np.flatnonzero(sel)[-max(1, np.sum(sel) // 4)]
-                ax.text(xs[i], 0.5 * (lo[i] + hi[i]), f"$N={n}$", ha="center", va="center", fontsize=8)
-        for y, mu in zip(lines, mus):
-            ax.plot(xs, y, "k-", lw=0.9)
-            ok = np.isfinite(mu)
-            ax.plot(x[ok], mu[ok], "k.", ms=3)
-        ax.axvline(1.0, color="0.4", lw=0.6, ls=":")
-        ax.set_ylim(-1, 1)
-        ax.set_xlim(x.min(), max(x.max(), 1.0) + 0.01)
+        mus = [np.array([r.get(k, np.nan) for r in rows]) for k in ("mu1", "mu2", "mu3", "mu4")]
+        gated = key.endswith(("D10", "D3"))
+        draw(ax, Z / Zc, mus, (-1, 1), n_label=3 if gated else 5)
+        if gated:
+            # zoom on the narrow three- and four-electron strips below the band edge
+            ins = ax.inset_axes([0.07, 0.07, 0.42, 0.42])
+            draw(ins, Z / Zc, mus, (0.6, 1.0), x_min=0.8, small=True)
+            ins.tick_params(labelsize=6, length=2, pad=1)
+            ins.set_xticks([0.8, 0.9, 1.0])
+            ins.set_yticks([0.6, 0.8, 1.0])
+            ax.add_patch(plt.Rectangle((0.8, 0.6), 0.21, 0.4, fill=False, ec="0.3", lw=0.6, ls="--"))
         ax.set_xlabel("$Z/Z_c$")
         ax.set_title(title, fontsize=9)
     axs[0].set_ylabel("$E_F/\\Delta$")
@@ -117,8 +161,9 @@ def main():
     for case, rows in data.items():
         print(case)
         for r in rows:
-            print("  Z/Zc=%.3f mu1=%+.4f mu2=%+.4f mu3=%s split=%+.5f%s" % (
+            print("  Z/Zc=%.3f mu1=%+.4f mu2=%+.4f mu3=%s mu4=%s split=%+.5f%s" % (
                 r["Z"] / r["Zc"], r["mu1"], r["mu2"], ("%+.4f" % r["mu3"]) if "mu3" in r else "  --  ",
+                ("%+.4f" % r["mu4"]) if "mu4" in r else "  --  ",
                 r["split_KKp_minus_KK"], " (dived)" if r["dived"] else ""))
 
 

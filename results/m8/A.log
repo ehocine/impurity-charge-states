@@ -1,0 +1,6 @@
+x=0.7 n=6: mu3=0.9807 mu4=0.9962 Delta  ground4=[1, 1, -1, -1] sym=1,1 M=0.0  t=357s
+x=0.8 n=6: mu3=0.9479 mu4=0.9832 Delta  ground4=[1, 1, -1, -1] sym=1,1 M=0.0  t=382s
+x=0.85 n=6: mu3=0.9161 mu4=0.9675 Delta  ground4=[1, 1, -1, -1] sym=1,1 M=0.0  t=561s
+x=0.9 n=6: mu3=0.8656 mu4=0.9406 Delta  ground4=[1, 1, -1, -1] sym=1,1 M=0.0  t=474s
+x=0.95 n=6: mu3=0.7810 mu4=0.8919 Delta  ground4=[1, 1, -1, -1] sym=1,1 M=0.0  t=536s
+x=0.99 n=6: mu3=0.6257 mu4=0.7877 Delta  ground4=[1, 1, -1, -1] sym=1,1 M=0.0  t=497s
