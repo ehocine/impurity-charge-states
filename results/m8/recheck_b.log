@@ -1,0 +1,4 @@
+x=0.95 n=12: mu3=0.7433 mu4=0.9102 Delta  ground4=[1, 1, -1, -1] sym=1,1 M=0.0  t=15453s
+x=0.99 n=12: mu3=0.5666 mu4=0.7920 Delta  ground4=[1, 1, -1, -1] sym=1,1 M=0.0  t=13526s
+x=0.99 n=12: mu3=0.6481 mu4=0.7770 Delta  ground4=[1, 1, -1, -1] sym=1,1 M=0.0  t=17995s
+all done

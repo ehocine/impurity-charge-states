@@ -1,0 +1,12 @@
+Z_c: homogeneous 2.1646, exact 2.2554
+x=0.5: mu1 0.8702 / 0.9388 / 0.9248; mu2 0.9730 / 0.9845 / 0.9805; mu3 0.9969 / 0.9968 / 0.9959 (homogeneous / exact same Z / exact same Z/Z_c)  t=270s
+x=0.7: mu1 0.5196 / 0.6863 / 0.6184; mu2 0.8512 / 0.9010 / 0.8764; mu3 0.9728 / 0.9778 / 0.9716 (homogeneous / exact same Z / exact same Z/Z_c)  t=243s
+x=0.8: mu1 0.1822 / 0.4069 / 0.2784; mu2 0.7133 / 0.7968 / 0.7463; mu3 0.9314 / 0.9497 / 0.9341 (homogeneous / exact same Z / exact same Z/Z_c)  t=291s
+x=0.9: mu1 -0.3202 / -0.0386 / -0.2593; mu2 0.4808 / 0.6136 / 0.5113; mu3 0.8369 / 0.8872 / 0.8457 (homogeneous / exact same Z / exact same Z/Z_c)  t=274s
+x=0.99: mu1 -0.9301 / -0.6134 / -0.9258; mu2 0.0314 / 0.3137 / 0.0084; mu3 0.5666 / 0.7526 / 0.5596 (homogeneous / exact same Z / exact same Z/Z_c)  t=256s
+Z_c: homogeneous 2.6186, exact 2.7897
+x=0.5: mu1 0.9898 / 1.0001 / 0.9990; mu2 0.9956 / 1.0008 / 1.0001; mu3 0.9986 / 1.0015 / 1.0009 (homogeneous / exact same Z / exact same Z/Z_c)  t=243s
+x=0.7: mu1 0.8511 / 0.9692 / 0.9367; mu2 0.9379 / 0.9837 / 0.9683; mu3 0.9774 / 0.9916 / 0.9850 (homogeneous / exact same Z / exact same Z/Z_c)  t=243s
+x=0.8: mu1 0.5695 / 0.8589 / 0.7145; mu2 0.8358 / 0.9362 / 0.8856; mu3 0.9497 / 0.9742 / 0.9613 (homogeneous / exact same Z / exact same Z/Z_c)  t=245s
+x=0.9: mu1 -0.0386 / 0.4947 / 0.0828; mu2 0.6167 / 0.8168 / 0.6853; mu3 0.8873 / 0.9458 / 0.9144 (homogeneous / exact same Z / exact same Z/Z_c)  t=247s
+x=0.99: mu1 -0.9032 / -0.2000 / -0.8917; mu2 0.0491 / 0.5788 / 0.0858; mu3 0.6481 / 0.8863 / 0.7096 (homogeneous / exact same Z / exact same Z/Z_c)  t=241s

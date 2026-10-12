@@ -1,0 +1,4 @@
+x=0.95 n=12: mu3=0.7433 mu4=0.9101 Delta  ground4=[1, 1, -1, -1] sym=1,1 M=0.0  t=765s
+x=0.95 n=12: mu3=0.8161 mu4=0.8939 Delta  ground4=[1, 1, -1, -1] sym=1,1 M=0.0  t=496s
+x=0.95 n=16: ground [1, 1, -1] sym=1 M=0.5; all-in-one-valley gap 0.2699 Delta  t=126s
+all done

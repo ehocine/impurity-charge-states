@@ -1,7 +1,7 @@
 """M8: four-electron energies and the fourth addition energy mu4 = E4 - E3 versus the impurity charge.
 
     python3 scripts/m8_four_electron_scan.py OUT.jsonl GAP_meV D_nm N_MAX X1 [X2 ...] [--ground-only]
-                                                                                   (X = Z/Z_c)
+                                                                          [--L 3]   (X = Z/Z_c)
 
 Same model and basis as M3 (Furry basis of h, L = 2 channels, R = 30/m, E_max = 6m), truncated to
 the lowest N_MAX states per channel.  E3 and E4 are the lowest energies over all three- and
@@ -11,6 +11,7 @@ The truncation dependence is removed by extrapolating mu4 in 1/N_MAX (scripts/m5
 --ground-only: only the ground sectors found at N_MAX = 6-10 for every gated case (three electrons:
 K singlet pair + K' electron, M = 1/2; four electrons: closed shell, singlet pair in each valley,
 M = 0), for the N_MAX convergence of mu4 at large N_MAX.
+--L: channels j = 1/2 - L ... 1/2 + L (default 2), for the multipole convergence.
 Energies in units of Delta, one JSON line per Z.
 """
 import json
@@ -34,13 +35,19 @@ L_CH, EMAX, RFAC, D_IMP = 2, 6.0, 30.0, 0.3
 def main():
     out, gap_meV, D, n_max = sys.argv[1], float(sys.argv[2]), float(sys.argv[3]), int(sys.argv[4])
     ground_only = "--ground-only" in sys.argv
-    xs = [float(x) for x in sys.argv[5:] if not x.startswith("--")]
+    args = sys.argv[5:]
+    L_ch = L_CH
+    if "--L" in args:
+        k = args.index("--L")
+        L_ch = int(args[k + 1])
+        args = args[:k] + args[k + 2:]
+    xs = [float(x) for x in args if not x.startswith("--")]
     mat = gapped_graphene(gap_meV / 2000.0)
     m = mat.m
     S = make_solver(mat, D_IMP, "rpa", D=D)
     w = interaction_weight(mat, D=D)
     R = RFAC / m
-    js = [0.5 + l for l in range(-L_CH, L_CH + 1)]
+    js = [0.5 + l for l in range(-L_ch, L_ch + 1)]
     q, qw = q_nodes(R, np.sqrt(EMAX ** 2 - 1) * m, D_IMP, dense_panel=8.0, n_log_panels=30)
     Zc = critical_charge(S)
     for x in xs:
@@ -61,7 +68,7 @@ def main():
         else:
             e3, g3, _ = lowest_state(ti, 3, js)
             e4, g4, s4 = lowest_state(ti, 4, js)
-        rec = {"gap_meV": gap_meV, "D": D, "Z": Z, "Zc": Zc, "x": x, "n_max": n_max, "L": L_CH, "Emax": EMAX,
+        rec = {"gap_meV": gap_meV, "D": D, "Z": Z, "Zc": Zc, "x": x, "n_max": n_max, "L": L_ch, "Emax": EMAX,
                "E1": float(B.E[B.select(0.5)[0]]) / m, "E2": float(e2) / m, "E3": float(e3) / m, "E4": float(e4) / m,
                "mu3": float(e3 - e2) / m, "mu4": float(e4 - e3) / m, "ground3": g3, "ground4": g4,
                "n_solved4": len(s4), "ground_only": ground_only, "time": time.time() - t}

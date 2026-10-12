@@ -1,0 +1,17 @@
+x=0.7 n=12: ground [1, 1, -1] sym=1 M=0.5; all-in-one-valley gap 0.0328 Delta  t=51s
+x=0.8 n=12: ground [1, 1, -1] sym=1 M=0.5; all-in-one-valley gap 0.0740 Delta  t=76s
+x=0.85 n=12: ground [1, 1, -1] sym=1 M=0.5; all-in-one-valley gap 0.1114 Delta  t=93s
+x=0.9 n=12: ground [1, 1, -1] sym=1 M=0.5; all-in-one-valley gap 0.1682 Delta  t=93s
+x=0.95 n=12: ground [1, 1, -1] sym=1 M=0.5; all-in-one-valley gap 0.2617 Delta  t=77s
+x=0.99 n=12: ground [1, 1, -1] sym=1 M=0.5; all-in-one-valley gap 0.4383 Delta  t=78s
+x=0.7 n=12: ground [1, 1, -1] sym=1 M=0.5; all-in-one-valley gap 0.0287 Delta  t=50s
+x=0.8 n=12: ground [1, 1, -1] sym=1 M=0.5; all-in-one-valley gap 0.0558 Delta  t=53s
+x=0.85 n=12: ground [1, 1, -1] sym=1 M=0.5; all-in-one-valley gap 0.0793 Delta  t=74s
+x=0.9 n=12: ground [1, 1, -1] sym=1 M=0.5; all-in-one-valley gap 0.1177 Delta  t=75s
+x=0.95 n=12: ground [1, 1, -1] sym=1 M=0.5; all-in-one-valley gap 0.1888 Delta  t=78s
+x=0.99 n=12: ground [1, 1, -1] sym=1 M=0.5; all-in-one-valley gap 0.3565 Delta  t=74s
+x=0.8 n=12: ground [1, 1, -1] sym=1 M=0.5; all-in-one-valley gap 0.0004 Delta  t=87s
+x=0.9 n=12: ground [1, 1, -1] sym=1 M=0.5; all-in-one-valley gap 0.0004 Delta  t=91s
+x=0.95 n=12: ground [1, 1, -1] sym=1 M=0.5; all-in-one-valley gap 0.0010 Delta  t=90s
+x=0.99 n=12: ground [1, 1, -1] sym=1 M=0.5; all-in-one-valley gap 0.0351 Delta  t=85s
+all done
