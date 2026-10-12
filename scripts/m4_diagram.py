@@ -86,7 +86,7 @@ def draw(ax, x, mus, ylim, x_min=None, small=False, n_label=5):
     """Charge-state regions between the addition energies mus = (mu_1 ... mu_4) on axes ax."""
     from scipy.interpolate import PchipInterpolator
     cols = ["#f2f2f2", "#cfe3f3", "#9ecae1", "#6baed6", "#3182bd"]
-    lo_x = x.min() if x_min is None else x_min
+    lo_x = round(float(x.min()), 3) if x_min is None else x_min
     xs = np.linspace(x.min(), x.max(), 400)
     lines = []
     for mu in mus:
@@ -110,6 +110,7 @@ def draw(ax, x, mus, ylim, x_min=None, small=False, n_label=5):
         sel = vis & ((hi - lo) > 0.09 * span) & (mid > ylim[0]) & (mid < ylim[1])
         if n < n_label and np.any(sel):
             i = np.flatnonzero(sel)[int(0.6 * np.sum(sel))] if n < 2 else np.flatnonzero(sel)[-max(1, np.sum(sel) // 4)]
+            i = min(i, int(np.searchsorted(xs, xs.max() - 0.06 * (xs.max() - lo_x))))   # keep the label inside
             ax.text(xs[i], mid[i], f"$N={n}$", ha="center", va="center", fontsize=6 if small else 8,
                     color="w" if n == 4 else "k")
     for y, mu in zip(lines, mus):

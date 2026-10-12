@@ -1,6 +1,7 @@
 """M4: tunnelling observables: Dyson orbitals, quasiparticle weights and radial profiles.
 
     python3 scripts/m4_sts.py           -> results/m4/sts_30meV.json, figures/fig_dyson_30meV.*
+    python3 scripts/m4_sts.py --plot    redraws the figure from results/m4/sts_30meV.json
 
 At Z = 0.95 Z_c (2Delta = 30 meV), without gate and with D = 10 nm:
   0 -> 1   the j = 1/2 orbital a0 (removal/addition peak at mu1)
@@ -77,6 +78,9 @@ def case(D, Zc, frac, with_three):
 
 
 def main():
+    if "--plot" in sys.argv:
+        plot(json.load(open(os.path.join(ROOT, "results", "m4", "sts_30meV.json"))))
+        return
     res = {"nogate": case(np.inf, 1.6713866023, 0.95, False),
            "D10": case(10.0, 2.1645759869, 0.95, True)}
     os.makedirs(os.path.join(ROOT, "results", "m4"), exist_ok=True)
@@ -90,7 +94,10 @@ def main():
             t = c["three"]
             print("   2->3 mu3(n20)=%+.4f Z_qp=%.4f <r>=%.1f nm  channels %s" % (
                 t["mu3_n20"], t["Z_qp"], t["r_mean_nm"], {k: round(v, 4) for k, v in t["channel_weights"].items()}))
+    plot(res)
 
+
+def plot(res):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -106,7 +113,7 @@ def main():
             ax.loglog(r, c["three"]["profile"], ":", color="#009E73", lw=1.3, label="$2\\to3$")
         ax.set_xlabel("$r$ (nm)")
         ax.set_title(title, fontsize=9)
-        ax.set_ylim(1e-8, 1e-2)
+        ax.set_ylim(1e-8, 3e-2)
     axs[0].set_ylabel("$|\\phi_D|^2/2\\pi r$ (nm$^{-2}$)")
     axs[1].legend(frameon=False, fontsize=7, loc="lower left")
     fig.tight_layout()
