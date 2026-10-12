@@ -71,3 +71,20 @@ def test_four_electrons(small):
             if c.size and np.isfinite(c.min_one_body()):
                 full.append(c.davidson(tol=1e-10)[0])
     assert abs(E4 - min(full)) < 1e-9 * B.m
+
+
+def test_four_electron_davidson_matches_dense(small):
+    """The memory-lean Davidson eigenvalue equals the lowest eigenvalue of the dense Hamiltonian on the
+    exchange-symmetric space in the four-electron sectors (closed shell, three in one valley, one valley)."""
+    B, I, ti = small
+    shift = 100.0 * B.m        # pushes the symmetric eigenvalues below the zeros of the complement
+    for val, sym, s23, M in (((1, 1, -1, -1), 1, 1, 0.0), ((1, 1, 1, -1), -1, 0, 1.0), ((1, 1, 1, -1), 1, 0, 0.0),
+                             ((1, 1, 1, 1), -1, -1, 2.0)):
+        c = ManyElectronCI(ti, val, sym, M, sym23=s23)
+        assert c.size > 0
+        P = np.array([c.symmetrize(e) for e in np.eye(c.size)]).T
+        H = np.array([c.matvec(P[:, i]) for i in range(c.size)]).T
+        A = P.T @ (H - shift * P)
+        e_dense = np.linalg.eigvalsh(0.5 * (A + A.T))[0] + shift
+        e_dav, _ = c.davidson(tol=1e-11)
+        assert abs(e_dav - e_dense) < 1e-8 * B.m, (val, sym, M, e_dav, e_dense)

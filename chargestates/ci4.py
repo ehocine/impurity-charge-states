@@ -229,13 +229,20 @@ class ManyElectronCI:
         (four electrons with 20 states per channel: 1.4e7 amplitudes, 110 MB each)."""
         diag = self.diagonal()
         if x0 is None:
-            # start from the lowest configuration allowed by the exchange symmetry
+            # start from the lowest configuration allowed by the exchange symmetry, plus a small
+            # deterministic random admixture: H and the diagonal preconditioner conserve the total
+            # spin, so a start vector of pure spin (e.g. a doubly occupied orbital) would confine
+            # the iteration to that spin and miss a lower state of another spin (Hund's rule)
             ok = np.flatnonzero(self.allowed())
             if len(ok) == 0:
                 raise ValueError("no configuration allowed by the exchange symmetry")
             x = np.zeros(self.size)
             x[ok[np.argmin(diag[ok])]] = 1.0
             x = self.symmetrize(x)
+            noise = np.zeros(self.size)
+            noise[ok] = np.random.default_rng(20261011).normal(size=len(ok))
+            noise = self.symmetrize(noise)
+            x = x / np.linalg.norm(x) + 0.1 * noise / np.linalg.norm(noise)
         else:
             x = self.symmetrize(np.array(x0, float))
         x /= np.linalg.norm(x)
@@ -253,18 +260,24 @@ class ManyElectronCI:
                 break
             den = theta - diag
             t = self.symmetrize(r / np.where(np.abs(den) < 1e-12, 1e-12, den))
-            del r
             if len(Vs) >= max_space:
                 nu = np.linalg.norm(u)
                 Vs, AVs = [u / nu], [Au / nu]
                 Hs = np.array([[Vs[0] @ AVs[0]]])
-            for _ in range(2):
-                for vv in Vs:
-                    t -= (vv @ t) * vv
-            nt = np.linalg.norm(t)
-            if nt < 1e-14:
+            # new direction: the preconditioned residual, or, where it lies in the subspace (e.g. a
+            # diagonal H, for which it is parallel to u), the residual itself
+            for cand in (t, self.symmetrize(r)):
+                cand = cand / max(np.linalg.norm(cand), 1e-300)
+                for _ in range(2):
+                    for vv in Vs:
+                        cand -= (vv @ cand) * vv
+                nt = np.linalg.norm(cand)
+                if nt > 1e-8:
+                    break
+            del r
+            if nt <= 1e-8:
                 break
-            t /= nt
+            t = cand / nt
             At = self.matvec(t)
             k = len(Vs)
             H2 = np.empty((k + 1, k + 1))
