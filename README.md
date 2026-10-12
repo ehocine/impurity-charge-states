@@ -9,7 +9,7 @@ Companion to *Atomic collapse in gapped two-dimensional Dirac materials: Screeni
 gates, and resonance widths*, whose single-particle code `collapse2d`
 ([ehocine/dirac-collapse](https://github.com/ehocine/dirac-collapse), release 1.0.0,
 [doi:10.5281/zenodo.23123320](https://doi.org/10.5281/zenodo.23123320)) this package builds on.
-Repository: https://github.com/ehocine/impurity-charge-states · Archive (all releases; 1.0.2 is the version of the manuscript): [doi:10.5281/zenodo.23249678](https://doi.org/10.5281/zenodo.23249678) · License: MIT (see `LICENSE`) · Citation: `CITATION.cff`
+Repository: https://github.com/ehocine/impurity-charge-states · Archive (all releases; 1.0.3 is the version of the manuscript): [doi:10.5281/zenodo.23249678](https://doi.org/10.5281/zenodo.23249678) · License: MIT (see `LICENSE`) · Citation: `CITATION.cff`
 
 ## Quick start
 
@@ -48,8 +48,9 @@ chargestates/
                    sectors, rigorous lower-bound sector skipping, memory-lean Davidson)
   field.py         Furry basis in a magnetic field (Pruefer-index projector, K' box G(R) = 0)
   meanfield.py     Hartree potential (fixed q nodes + Ogata quadrature), mean-field basis
-  observables.py   orbital magnetic moments, polarization self-energy estimates, moire form
-                   factors, intervalley exchange estimate
+  observables.py   orbital magnetic moments, polarization self-energy estimates (single mode and
+                   RPA electron-hole continuum of the gapped sea), moire form factors,
+                   intervalley exchange estimate
 tests/             test_m1.py (basis, interaction), test_m2.py (two-electron CI),
                    test_m3.py (three-electron CI, Hartree, dived level), test_observables.py,
                    test_field.py (field basis, Landau levels, low-field moment, two-basis CI),
@@ -67,7 +68,14 @@ scripts/
                                             from results/m6/finite_field_moments.json),
                                             self-energy, moire, intervalley exchange
   m7_finite_field_moments.py                Table IV   finite-field moments -dE_N/dB at 2, 4 mT
-  m8_four_electron_scan.py                  Fig. 1     four-electron energies vs Z (results/m8)
+  m8_four_electron_scan.py                  Fig. 1     four-electron energies vs Z (results/m8; --L sets
+                                                       the channel window)
+  m9_sector_gaps.py                         Sec. V     lowest energy of every three-electron sector
+                                                       vs Z (results/m9)
+  m10_three_complete.py                     Sec. III   three-electron addition energy in the complete
+                                                       basis at several E_max (results/m10)
+  m11_gate_kernel.py                        Sec. II    sensitivity to the gate model: homogeneous kappa vs
+                                                       the exact vacuum/hBN/metal kernel (results/m11)
   u_estimate.py                             first-order charging energy (planning estimate)
 results/           JSON outputs; results/m3/run_*.sh reproduce the scans (order: run_scans,
                    run_three, run_batch2, run_gaps)
