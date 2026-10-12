@@ -8,7 +8,8 @@ Graphene on hBN (kappa = 2.5, d = 0.3 nm, Dirac-sea RPA), Z = 0.95 Z_c.
       singlet and the three-electron state (K pair + K'); low-field slopes of the addition energies
       d mu_N/dB = -(M_N - M_{N-1}) mu_B in the favourable valley (meV/T); magnetic length vs orbit
     - slow-sea self-energies of a0 and of the 1->2 Dyson orbital; K-weighted mean excitation
-      energy w_bar of a0 (input of the single-pole interpolation, Appendix C)
+      energy w_bar of a0 (input of the single-pole interpolation, Appendix C); the same estimate
+      with the RPA electron-hole continuum of the sea (observables.sigma_dynamic_rpa)
     - moire form factors (scalar, mass, current) of a0 and of the Dyson orbital
     - contact estimate of the intervalley exchange; gap from j = 1/2 to the lowest j = -1/2 level
   2Delta = 100, 300 meV (no gate): moment, band-edge moment, B*, J_iv, <r>
@@ -87,13 +88,7 @@ def full_case(gap, D):
     out["moments_muB"].update({"M2_KK_singlet_n20": M2t, "M3_n20": M3})
     k = ob.MU_B_MEV_PER_T
     out["slopes_meV_per_T"] = {"mu1": -M1 * k, "mu2": -(M2 - M1) * k, "mu3": -(M3 - M2t) * k}
-    # all three electrons in the favourable valley: the third goes into the lowest j = -1/2 orbital
-    # of K instead of the j = 1/2 orbital of K'; it costs about the orbital gap and gains the valley
-    # Zeeman energy of flipping its moment, (|M3 - M2| + s m_{-1/2}) B
-    m_jm = s * ob.moment_one(B, B.select(-0.5)[0])
-    out["moment_jm12_muB"] = m_jm
-    gain = (abs(M3 - M2t) + m_jm) * k                                   # meV/T
-    out["B_cross_KKK_T"] = out["gap_to_jm12"] * gap / 2 / gain
+    # (the all-in-one-valley three-electron sector has no bound state at B = 0: scripts/m9_sector_gaps.py)
     # magnetic length l_B = 25.66 nm / sqrt(B[T]) equals the orbital radius at B_l = (25.66/<r>)^2
     rD = float(((FD ** 2 + GD ** 2) * g.r) @ g.w)
     out["r_mean_dyson12_nm"] = rD
@@ -111,6 +106,15 @@ def full_case(gap, D):
         out["sigma_dynamic_meV"]["%.2f" % wb] = {"a0": s0, "dyson12": s1,
                                                  "mu1_shift_Delta": s0 / (gap / 2),
                                                  "mu2_minus_mu1_shift_Delta": (s1 - s0) / (gap / 2)}
+    # the same with the RPA electron-hole continuum of the sea instead of a single mode at its edge
+    out["sigma_dynamic_rpa_meV"] = {}
+    for wb in (out["gap_to_jm12"], 2.0, wbar):
+        s0, _, rel0 = ob.sigma_dynamic_rpa(I, mat, F, G, wb, w_env, D)
+        s1, _, rel1 = ob.sigma_dynamic_rpa(I, mat, FD, GD, wb, w_env, D)
+        out["sigma_dynamic_rpa_meV"]["%.2f" % wb] = {"a0": s0, "dyson12": s1,
+                                                     "mu1_shift_Delta": s0 / (gap / 2),
+                                                     "mu2_minus_mu1_shift_Delta": (s1 - s0) / (gap / 2),
+                                                     "sum_rule_rel_err": max(rel0, rel1)}
     # moire and intervalley exchange
     out["moire"] = {"a0": ob.moire_form_factors(B, F, G), "dyson12": ob.moire_form_factors(B, FD, GD)}
     out["J_iv_meV"] = ob.intervalley_exchange(B, F, G, w, mat)

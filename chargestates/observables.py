@@ -29,7 +29,7 @@ MEV_HV = None          # set from the material: energies in nm^-1 times hbar v (
 ME_V_OVER_HBAR = 9.1093837e-31 * 1.0e6 / 1.054571817e-34 * 1e-9    # m_e v / hbar in nm^-1 (v = 1e6 m/s)
 MU_B_MEV_PER_T = 0.0578838
 A_LATTICE = 0.246                                                  # nm
-K_KPRIME = 4 * np.pi / (3 * A_LATTICE) * np.sqrt(3)                # |K - K'| in nm^-1
+K_KPRIME = 4 * np.pi / (3 * A_LATTICE)                              # shortest |K' - K + G| = |K|, nm^-1
 
 
 # ---------------------------------------------------------------------------------------
@@ -148,3 +148,68 @@ def sigma_dynamic(inter, mat, F, G, w_bar, w_env):
     wp = np.sqrt(inter.q ** 2 + 4 * m * m)
     fac = w_bar * m / (wp + w_bar * m)
     return -0.5 * float((kern * fac) @ A ** 2) * mat.hbar_v * 1000
+
+
+# ---------------------------------------------------------------------------------------
+# dynamical polarization of the gapped sea (RPA continuum)
+# ---------------------------------------------------------------------------------------
+
+def dynamic_polarization(q, omega, m, eta=1e-12):
+    """Retarded interband polarization Pi(q, omega) of one gapped Dirac flavour (hbar v = 1).
+
+    With v the only velocity the 2+1-dimensional vacuum polarization is Lorentz invariant, so the
+    density response is q^2 P(q^2 - omega^2) with P(s) = Pi_static(sqrt s)/s; the continuation
+    s -> q^2 - (omega + i0)^2 gives Im Pi = q^2 (1 + 4m^2/u) / (16 sqrt u), u = omega^2 - q^2 > 4m^2."""
+    q = np.asarray(q, float)
+    om = np.asarray(omega, float)
+    s = q * q - om ** 2 - 1j * eta * (q * q + om ** 2 + m * m)      # retarded: omega + i0
+    z = np.sqrt(s + 0j)
+    g = np.arctan(z / (2 * m)) / z
+    return q * q * (m + (s - 4 * m * m) / 2 * g) / (4 * np.pi * s)
+
+
+def induced_spectral(q, omega, mat, D=np.inf):
+    """Spectral density b(q, omega) >= 0 of the sea-induced part of w = q W/2 pi:
+    w(q, omega) - w_env(q) = int domega' b [1/(omega - omega' + i0) - 1/(omega + omega' + i0)],
+    b = alpha0 G Im eps / (pi |eps|^2), eps = kappa + r_K q + 2 pi alpha0 N Pi(q, omega) G / q.
+    Static sum rule: 2 int b / omega' domega' = w_env(q) - w(q, 0)."""
+    q = np.asarray(q, float)
+    G = np.ones_like(q) if np.isinf(D) else -np.expm1(-2 * q * D)
+    eps = mat.kappa + mat.r_K * q + 2 * np.pi * mat.alpha0 * mat.N * dynamic_polarization(q, omega, mat.m) * G / q
+    return mat.alpha0 * G * eps.imag / (np.pi * np.abs(eps) ** 2)
+
+
+def continuum_factor(q, w_bar, mat, D=np.inf, n_omega=400):
+    """T(q) = int domega' b(q, omega') w_bar / (omega' (omega' + w_bar)) on the electron-hole
+    continuum omega' > omega_p(q) = sqrt(q^2 + 4m^2) (w_bar in nm^-1), and the static check
+    S(q) = 2 int b / omega'.  The single-mode model puts all of S/2 at omega_p:
+    T_1(q) = (S/2) w_bar / (omega_p + w_bar) >= T(q)."""
+    q = np.asarray(q, float)
+    wp = np.sqrt(q * q + 4 * mat.m ** 2)
+    # omega' = omega_p exp(x), x in (0, 14): Gauss-Legendre in 14 unit panels
+    xg, wg = np.polynomial.legendre.leggauss(n_omega // 14)
+    x = np.concatenate([k + 0.5 * (xg + 1) for k in range(14)])
+    wx = np.concatenate([0.5 * wg] * 14)
+    om = wp[:, None] * np.exp(x)[None, :]
+    b = induced_spectral(q[:, None], om, mat, D) * om * wx[None, :]          # b domega'
+    T = (b * w_bar / (om * (om + w_bar))).sum(axis=1)
+    S = 2 * (b / om).sum(axis=1)
+    return T, S
+
+
+def sigma_dynamic_rpa(inter, mat, F, G, w_bar, w_env, D=np.inf):
+    """Localisation-dependent polarization self-energy (meV) with the RPA continuum of the sea,
+        delta Sigma = - int dq A(q)^2 T(q),   A = int (F^2 + G^2) J0(q r) dr,
+    relative to a band-edge electron, with a common excitation energy w_bar (units of m) of the
+    other transitions (Appendix C of the manuscript).  Returns (delta Sigma, the single-mode value
+    of sigma_dynamic, the largest relative error of the static sum rule on the q nodes that
+    carry the orbital)."""
+    m = inter.basis.m
+    q = inter.q
+    T, S = continuum_factor(q, w_bar * m, mat, D)
+    A = (F ** 2 + G ** 2) @ inter._bessel(0)
+    sig = -float((T * inter.qw) @ A ** 2) * mat.hbar_v * 1000
+    kern = _kernel(inter, w_env) / inter.qw
+    sel = A ** 2 > 1e-6 * np.max(A ** 2)
+    rel = float(np.max(np.abs(S[sel] - kern[sel]) / kern[sel]))
+    return sig, sigma_dynamic(inter, mat, F, G, w_bar, w_env), rel

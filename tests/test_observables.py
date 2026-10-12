@@ -69,3 +69,34 @@ def test_dynamic_self_energy_limits():
     vals = [ob.sigma_dynamic(I, MAT, F, G, x, w_env) for x in (0.5, 1.0, 2.0, 4.0)]
     assert all(a > b for a, b in zip(vals, vals[1:]))
     assert ob.slow_sea(I, MAT, a0, w_env)[0] == pytest.approx(slow, rel=1e-10)
+
+
+def test_dynamic_polarization_and_continuum():
+    """Pi(q, omega) continued from the static Pi (Lorentz invariance): static limit, the closed-form
+    electron-hole continuum, the static sum rule of the induced spectral density, and the continuum
+    factor below the single-mode one."""
+    from collapse2d.potentials import polarization
+    m = MAT.m
+    q = np.array([0.2, 1.0, 3.0]) * m
+    assert np.allclose(ob.dynamic_polarization(q, 0.0, m).real, polarization(q, m), rtol=1e-12)
+    for om in (0.5 * m, 2.0 * m, 2.5 * m, 6.0 * m):
+        u = om ** 2 - q ** 2
+        exact = np.where(u > 4 * m * m, q * q * (1 + 4 * m * m / u) / (16 * np.sqrt(np.abs(u))), 0.0)
+        assert np.allclose(ob.dynamic_polarization(q, om, m).imag, exact, atol=1e-12 * m)
+    for D in (np.inf, 10.0):
+        w, w_env = interaction_weight(MAT, D=D), interaction_weight(MAT, D=D, rpa=False)
+        T, S = ob.continuum_factor(q, 2.0 * m, MAT, D)
+        assert np.allclose(S, w_env(q) - w(q), rtol=1e-4)
+        wp = np.sqrt(q * q + 4 * m * m)
+        assert np.all(T < 0.5 * S * 2.0 * m / (wp + 2.0 * m))
+
+
+def test_intervalley_wave_vector():
+    """|K - K'| is the shortest K' - K + G over reciprocal lattice vectors G, i.e. |K| = 4 pi/3a."""
+    a = ob.A_LATTICE
+    b1 = 2 * np.pi / a * np.array([1.0, -1 / np.sqrt(3)])
+    b2 = 2 * np.pi / a * np.array([0.0, 2 / np.sqrt(3)])
+    K = 4 * np.pi / (3 * a) * np.array([1.0, 0.0])
+    dq = min(np.linalg.norm(-2 * K + n1 * b1 + n2 * b2) for n1 in range(-3, 4) for n2 in range(-3, 4))
+    assert np.isclose(dq, ob.K_KPRIME, rtol=1e-12)
+    assert np.isclose(np.linalg.norm(b1), np.linalg.norm(b2)) and ob.K_KPRIME < np.linalg.norm(b1)
