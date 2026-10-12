@@ -8,9 +8,11 @@ draws, for E_F inside the gap, the ground-state electron number N: the grand-can
 state has N electrons when mu_N < E_F < mu_{N+1}, with the addition energies
   mu_1 = E_1,  mu_2 = E_2 - E_1 (E_2 = lowest of the K-K singlet and K-K' pair),
   mu_3 = E_3 - E_2 (both at n_max = 20, where the truncation largely cancels) plus the
-         correction MU3_SHIFT to n_max -> inf, calibrated at D = 10 nm, Z = 0.95 Z_c
-         (results/m3/three_D10_nmax_convergence.jsonl: n_max = 12..28 -> 0.7433 .. 0.7255,
-         1/n extrapolation 0.712; shift -0.018 +- 0.01 Delta).
+         correction MU3_SHIFT to the converged basis, calibrated at D = 10 nm, Z = 0.95 Z_c:
+         n_max = 20 gives 0.7306, the complete basis (all states up to E_max) 0.7218, 0.7176 and
+         0.7154 at E_max = 4m, 6m and 8m (results/m3/three_D10_nmax_convergence.jsonl,
+         results/m10), and their extrapolation in E_max^-p (p = 0.8-1.3) 0.707-0.711;
+         shift -0.022 +- 0.01 Delta.
   mu_4 = E_4 - E_3 (results/m8, ground sectors: closed shell / K pair + K' electron) at
          n_max = 12 and 16, extrapolated as a + b/n_max (checked against n_max = 20 at 0.95 Z_c:
          within 0.002 Delta).  With a gate the fourth electron completes the fourfold level near
@@ -30,7 +32,7 @@ OUT = os.path.join(ROOT, "results", "m4")
 FIG = os.path.join(ROOT, "figures")
 
 
-MU3_SHIFT = -0.018
+MU3_SHIFT = -0.022
 
 
 def load(name):

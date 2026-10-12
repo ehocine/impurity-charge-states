@@ -1,0 +1,21 @@
+E_max=4.0m: n={'-1.5': 36, '-0.5': 37, '0.5': 38, '1.5': 37, '2.5': 36} mu3=0.72181 Delta size=958196 t=89s
+E_max=8.0m: n={'-1.5': 75, '-0.5': 76, '0.5': 77, '1.5': 76, '2.5': 75} mu3=0.71536 Delta size=8322995 t=1481s
+     1581.69 real      1988.55 user        84.67 sys
+          5189304320  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+            18885394  page reclaims
+                1768  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                9219  voluntary context switches
+             2021095  involuntary context switches
+      16239185014000  instructions retired
+       6206988263605  cycles elapsed
+          8895159592  peak memory footprint
+all done
