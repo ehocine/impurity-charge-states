@@ -3,16 +3,19 @@
     python3 scripts/m4_diagram.py
 
 Reads results/m3/scan_<gap>meV_<case>.jsonl (one and two electrons, L = 2, E_max = 6m) and
-results/m3/three_<gap>meV_<case>_n20.jsonl (three electrons, n_max = 20 per channel) and
+results/m3/three_<gap>meV_<case>_n<n>.jsonl (three electrons, n_max = 12, 16, 20 per channel) and
 draws, for E_F inside the gap, the ground-state electron number N: the grand-canonical ground
 state has N electrons when mu_N < E_F < mu_{N+1}, with the addition energies
   mu_1 = E_1,  mu_2 = E_2 - E_1 (E_2 = lowest of the K-K singlet and K-K' pair),
-  mu_3 = E_3 - E_2 (both at n_max = 20, where the truncation largely cancels) plus the
-         correction MU3_SHIFT to the converged basis, calibrated at D = 10 nm, Z = 0.95 Z_c:
-         n_max = 20 gives 0.7306, the complete basis (all states up to E_max) 0.7218, 0.7176 and
-         0.7154 at E_max = 4m, 6m and 8m (results/m3/three_D10_nmax_convergence.jsonl,
-         results/m10), and their extrapolation in E_max^-p (p = 0.8-1.3) 0.707-0.711;
-         shift -0.022 +- 0.01 Delta.
+  mu_3 = E_3 - E_2 (both at the same truncation n_max = 12, 16, 20 states per channel,
+         results/m3/three_<gap>meV_<case>_n<n>.jsonl), extrapolated point by point as a + b/n_max
+         (least squares over the three); its uncertainty is the larger deviation of the 12-16 and
+         16-20 two-point extrapolations, at least 0.005 Delta.  At D = 10 nm, Z = 0.95 Z_c this
+         gives 0.711, against 0.707-0.711 from the complete basis (all states up to E_max = 4m, 6m,
+         8m: 0.7218, 0.7176, 0.7154) extrapolated in E_max^-p (results/m3/
+         three_D10_nmax_convergence.jsonl, results/m10).  The truncation dependence varies strongly
+         with the charge and the gate (none without a gate, up to 0.15 Delta from n_max = 20 at
+         D = 3 nm near Z_c), so a single shift calibrated at one point does not apply.
   mu_4 = E_4 - E_3 (results/m8, ground sectors: closed shell / K pair + K' electron) at
          n_max = 12 and 16, extrapolated as a + b/n_max (checked against n_max = 20 at 0.95 Z_c:
          within 0.002 Delta).  With a gate the fourth electron completes the fourfold level near
@@ -32,15 +35,41 @@ OUT = os.path.join(ROOT, "results", "m4")
 FIG = os.path.join(ROOT, "figures")
 
 
-MU3_SHIFT = -0.022
-
-
 def load(name):
     path = os.path.join(M3, name)
     if not os.path.exists(path):
         return []
     rows = [json.loads(line) for line in open(path) if line.strip()]
     return sorted(rows, key=lambda d: d["Z"])
+
+
+def mu3_extrapolated(gap, case):
+    """{round(Z, 6): (mu_3 extrapolated in 1/n_max, uncertainty, mu_3 at n_max = 20)}.
+
+    a + b/n_max is fitted to the three largest n_max available (12, 16, 20, and 24, 28 where
+    results/m3/three_<gap>meV_<case>_n24_28.jsonl has them).  The uncertainty is the largest
+    deviation from it of the two-point extrapolations of consecutive n_max and of the fit to
+    12, 16, 20, and at least 0.005 Delta."""
+    runs = {n: {round(d["Z"], 6): d for d in load(f"three_{gap}meV_{case}_n{n}.jsonl")
+                if d.get("E1") is not None and "E3" in d} for n in (12, 16, 20)}
+    for d in load(f"three_{gap}meV_{case}_n24_28.jsonl"):           # same charges to 1e-5
+        near = [z for z in runs[20] if abs(z - d["Z"]) < 1e-4]
+        if "E3" in d and near:
+            runs.setdefault(d["n_max"], {})[near[0]] = d
+    out = {}
+    for z, d20 in runs[20].items():
+        ns = [n for n in sorted(runs) if z in runs[n]]
+        if not {12, 16, 20} <= set(ns):
+            continue
+        mu = {n: runs[n][z]["E3"] - min(runs[n][z]["E2_singlet"], runs[n][z]["E2_intervalley"]) for n in ns}
+
+        def fit(sel):
+            b, a = np.polyfit(1.0 / np.array(sel, float), [mu[n] for n in sel], 1)
+            return a
+        a = fit(ns[-3:])
+        cand = [fit([12, 16, 20])] + [mu[n2] - (mu[n1] - mu[n2]) / (1 / n1 - 1 / n2) / n2 for n1, n2 in zip(ns, ns[1:])]
+        out[z] = (float(a), float(max(0.005, *(abs(c - a) for c in cand[-3:] + cand[:1]))), float(mu[20]))
+    return out
 
 
 def mu4_extrapolated(case):
@@ -62,18 +91,16 @@ def mu4_extrapolated(case):
 
 def addition_energies(case, gap=30):
     two = [d for d in load(f"scan_{gap}meV_{case}.jsonl") if d.get("E1") is not None]
-    three = {round(d["Z"], 6): d for d in load(f"three_{gap}meV_{case}_n20.jsonl")
-             if d.get("E1") is not None and "E3" in d}
+    mu3 = mu3_extrapolated(gap, case)
     mu4 = mu4_extrapolated(case) if gap == 30 and case != "nogate" else {}
     rows = []
     for d in two:
         E2 = min(d["singlet"], d["intervalley"])
         rec = {"Z": d["Z"], "Zc": d["Zc"], "mu1": d["E1"], "mu2": E2 - d["E1"],
                "split_KKp_minus_KK": d["intervalley"] - d["singlet"], "dived": d.get("dived", False)}
-        t = three.get(round(d["Z"], 6))
+        t = mu3.get(round(d["Z"], 6))
         if t is not None:
-            E2t = min(t["E2_singlet"], t["E2_intervalley"])
-            rec["mu3"] = t["E3"] - E2t + MU3_SHIFT
+            rec["mu3"], rec["mu3_err"], rec["mu3_n20"] = t
         x = round(d["Z"] / d["Zc"], 3)
         if x in mu4:
             rec["mu4"] = mu4[x]
